@@ -30,7 +30,7 @@ class AstroApp(QMainWindow):
         self.image_data_list = []
 
     def load_images(self):
-        """Charge plusieurs images FITS et les affiche."""
+        """Charge plusieurs im#Afficher l’imageages FITS et les affiche."""
         file_paths, _ = QFileDialog.getOpenFileNames(
             self, "Sélectionnez des fichiers FITS", "", "FITS Files (*.fit *.fits)"
         )
