@@ -1,7 +1,7 @@
 from astroquery.skyview import SkyView
 
 # Définir les paramètres
-objet = "Tarantula"  # Nom de l'objet céleste (ou donner des coordonnées comme "10.684, 41.269")
+objet = "Andromeda"  # Nom de l'objet céleste (ou donner des coordonnées comme "10.684, 41.269")
 surveys = ["SWIFT"]  # Liste des missions, ici le Digitized Sky Survey
 pixels = 500  # Taille de l'image en pixels (pour une image plus grande ou plus précise)
 file_format = "fits"  # Format de sortie
