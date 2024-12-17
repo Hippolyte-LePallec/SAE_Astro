@@ -1,11 +1,30 @@
 from astropy.io import fits
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
+import numpy as np
 
+# Charger le fichier FITS
+image1 = './Tarantula-20241216/Tarantula/Tarantula_Nebula-halpha.fit'  
+image2 = './Tarantula-20241216/Tarantula/Tarantula_Nebula-oiii.fit'   
+image3 = './Tarantula-20241216/Tarantula/Tarantula_Nebula-sii.fit'    
 
-data = fits.getdata('Tarantula-20241216/Tarantula/Tarantula_Nebula-halpha.fit')
+data1 = fits.getdata(image1)
+data2 = fits.getdata(image2)
+data3 = fits.getdata(image3)
 
+vmin_r, vmax_r = np.percentile(data1, (1, 99))
+data1_norm = np.clip((data1 - vmin_r) / (vmax_r - vmin_r), 0, 1)
 
+vmin_g, vmax_g = np.percentile(data2, (1, 99))
+data2_norm = np.clip((data2 - vmin_g) / (vmax_g - vmin_g), 0, 1)
+
+vmin_b, vmax_b = np.percentile(data3, (1, 99))
+data3_norm = np.clip((data3 - vmin_b) / (vmax_b - vmin_b), 0, 1)
+
+# Combiner les canaux dans une image
+image = np.stack([data1_norm, data2_norm, data3_norm], axis=-1)
+
+# Liste complète des colormaps
 colormaps = [
     'Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 
     'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Grays', 'Greens', 'Greens_r', 'Greys', 
@@ -29,26 +48,30 @@ colormaps = [
     'viridis_r', 'winter', 'winter_r'
 ]
 
-
+# Création de la figure et de l'axe principal
 fig, ax = plt.subplots()
-plt.subplots_adjust(left=0.25, right=0.9, top=0.9, bottom=0.3)  
-im = ax.imshow(data, cmap='Accent')
+plt.subplots_adjust(left=0.25, right=0.9, top=0.9, bottom=0.3)  # Espace pour widgets
+im = ax.imshow(image, cmap='viridis')  # Colormap initiale
 plt.colorbar(im, ax=ax)
 
-
-slider_ax = plt.axes([0.25, 0.1, 0.6, 0.03], facecolor='lightgrey') 
+# Création de l'axe pour le slider
+slider_ax = plt.axes([0.25, 0.1, 0.6, 0.03], facecolor='lightgrey')  # [left, bottom, width, height]
 slider = Slider(slider_ax, 'Index', 0, len(colormaps) - 1, valinit=0, valstep=1)
 
-
+# Ajout d'un texte dynamique pour le nom du filtre
 filter_text = plt.text(0.5, 0.15, f'Colormap: {colormaps[0]}', fontsize=12, ha='center', va='center', transform=fig.transFigure)
 
+# Fonction pour mettre à jour la colormap et le texte
 def update_colormap(val):
     cmap_index = int(slider.val)
     selected_cmap = colormaps[cmap_index]
     im.set_cmap(selected_cmap)
-    filter_text.set_text(f'Colormap: {selected_cmap}') 
+    filter_text.set_text(f'Colormap: {selected_cmap}')  # Mettre à jour le texte
+    plt.draw()
 
-
+# Liaison du slider à la fonction de mise à jour
 slider.on_changed(update_colormap)
 
+# Affichage
 plt.show()
+
