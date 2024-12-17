@@ -8,6 +8,7 @@ from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar
 )
+
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from astropy.visualization import ImageNormalize, LogStretch, MinMaxInterval
@@ -18,25 +19,22 @@ class FitsViewer(QMainWindow):
         self.setWindowTitle("FITS Viewer avec PyQt6")
         self.setGeometry(100, 100, 800, 600)
 
-        # Widget principal
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         layout = QVBoxLayout(self.central_widget)
 
-        # Canvas pour afficher l'image
         self.canvas = FigureCanvas(plt.figure())
         layout.addWidget(NavigationToolbar(self.canvas, self))
         layout.addWidget(self.canvas)
 
-        # Panneau de contrôle
+
         controls_layout = QHBoxLayout()
 
-        # Bouton pour charger les fichiers FITS
         self.load_button = QPushButton("Charger 3 FITS")
         self.load_button.clicked.connect(self.load_fits)
         controls_layout.addWidget(self.load_button)
 
-        # Contrôle des contrastes avec un slider
+
         self.contrast_label = QLabel("Contraste :")
         controls_layout.addWidget(self.contrast_label)
 
@@ -47,7 +45,6 @@ class FitsViewer(QMainWindow):
         self.contrast_slider.sliderReleased.connect(self.update_image)
         controls_layout.addWidget(self.contrast_slider)
 
-        # Sélecteur de palettes de couleurs
         self.colormap_label = QLabel("Palette :")
         controls_layout.addWidget(self.colormap_label)
 
@@ -77,7 +74,7 @@ class FitsViewer(QMainWindow):
 
         layout.addLayout(controls_layout)
 
-        # Initialisation des données
+
         self.image_data_list = []
         self.combined_image = None
 
@@ -93,7 +90,7 @@ class FitsViewer(QMainWindow):
                     image_data = hdul[0].data
                     hdul.close()
 
-                    # Nettoyage des données
+
                     image_data = np.nan_to_num(image_data, nan=0.0, posinf=0.0, neginf=0.0)
                     self.image_data_list.append(image_data)
 
@@ -120,17 +117,16 @@ class FitsViewer(QMainWindow):
         if self.combined_image is None:
             return
 
-        # Récupérer les paramètres de contraste
+
         vmin = np.percentile(self.combined_image, 1)
         vmax = np.percentile(self.combined_image, self.contrast_slider.value())
 
-        # Palette de couleurs
         colormap = self.colormap_selector.currentText()
 
-        # Création de la normalisation
+
         norm = ImageNormalize(self.combined_image, interval=MinMaxInterval(), stretch=LogStretch(), vmin=vmin, vmax=vmax)
 
-        # Mise à jour de l'affichage
+
         self.canvas.figure.clear()
         ax = self.canvas.figure.add_subplot(111)
         im = ax.imshow(self.combined_image, cmap=colormap, origin="lower", norm=norm)

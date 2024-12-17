@@ -20,30 +20,41 @@ class AstroApp(QMainWindow):
         self.setCentralWidget(self.central_widget)
         layout = QVBoxLayout(self.central_widget)
 
-        # Ajout des trois images individuelles
-        self.image_canvases = [FigureCanvas(plt.figure()) for _ in range(3)]
+        # Ajout des trois images individuelles avec sélecteurs de palette
+        self.image_canvases = []
+        self.colormap_selectors = []
+        self.image_data_list = []
+
         images_layout = QHBoxLayout()
-        for canvas in self.image_canvases:
-            images_layout.addWidget(canvas)
+        for i in range(3):
+            # Création de la figure et du sélecteur de palette
+            canvas = FigureCanvas(plt.figure())
+            self.image_canvases.append(canvas)
+            colormap_selector = QComboBox()
+            colormap_selector.addItems(plt.colormaps())
+            # Connecter la mise à jour de l'image individuelle
+            colormap_selector.currentTextChanged.connect(lambda _, idx=i: self.update_individual_image(idx))
+            # Connecter la mise à jour de l'image combinée
+            colormap_selector.currentTextChanged.connect(self.combine_images)
+            self.colormap_selectors.append(colormap_selector)
+
+            # Ajout dans un sous-layout
+            image_layout = QVBoxLayout()
+            image_layout.addWidget(canvas)
+            image_layout.addWidget(colormap_selector)
+            images_layout.addLayout(image_layout)
+
         layout.addLayout(images_layout)
 
         # Ajout de l'image combinée
         self.combined_canvas = FigureCanvas(plt.figure())
         layout.addWidget(self.combined_canvas)
 
-        # Sélecteur de palette de couleurs
-        self.colormap_selector = QComboBox()
-        self.colormap_selector.addItems(plt.colormaps())
-        self.colormap_selector.currentTextChanged.connect(self.update_combined_image)
-        layout.addWidget(self.colormap_selector)
-
         # Bouton de chargement
-        self.load_button = QPushButton("Charger les images FITS")
+        self.load_button = QPushButton("Ouvrir les images FITS")
         self.load_button.clicked.connect(self.load_images)
         layout.addWidget(self.load_button)
 
-        # Données des images
-        self.image_data_list = []
         self.combined_image = None
 
     def load_images(self):
@@ -72,32 +83,61 @@ class AstroApp(QMainWindow):
 
     def update_individual_images(self):
         """Affiche les trois images individuelles."""
-        for i, (canvas, image_data) in enumerate(zip(self.image_canvases, self.image_data_list)):
-            canvas.figure.clear()
-            ax = canvas.figure.add_subplot(111)
-            norm = ImageNormalize(image_data, interval=MinMaxInterval(), stretch=LogStretch())
-            ax.imshow(image_data, cmap="gray", origin="lower", norm=norm)
-            ax.set_title(f"Image {i + 1}")
-            canvas.draw()
+        for i in range(3):
+            self.update_individual_image(i)
+
+    def update_individual_image(self, index):
+        """Met à jour l'image individuelle avec le filtre sélectionné."""
+        if index >= len(self.image_data_list):
+            return
+
+        canvas = self.image_canvases[index]
+        colormap = self.colormap_selectors[index].currentText()
+        image_data = self.image_data_list[index]
+
+        canvas.figure.clear()
+        ax = canvas.figure.add_subplot(111)
+        norm = ImageNormalize(image_data, interval=MinMaxInterval(), stretch=LogStretch())
+        ax.imshow(image_data, cmap=colormap, origin="lower", norm=norm)
+        ax.set_title(f"Image {index + 1}")
+        canvas.draw()
 
     def combine_images(self):
-        """Combine les trois images en utilisant la moyenne."""
-        try:
-            self.combined_image = np.mean(self.image_data_list, axis=0)
-            self.update_combined_image()
-        except Exception as e:
-            print(f"Erreur lors de la combinaison des images : {e}")
+        """Combine les images avec leurs filtres appliqués tout en conservant les couleurs."""
+        if not self.image_data_list:
+            return
+
+        # Appliquer les colormaps aux images
+        combined_rgba = None
+        for i, image_data in enumerate(self.image_data_list):
+            colormap = self.colormap_selectors[i].currentText()
+            norm = ImageNormalize(image_data, interval=MinMaxInterval(), stretch=LogStretch())
+            rgba_image = plt.cm.get_cmap(colormap)(norm(image_data))  # Génère un tableau RGBA
+
+            # Initialisation ou accumulation des images RGBA
+            if combined_rgba is None:
+                combined_rgba = rgba_image
+            else:
+                combined_rgba[:, :, :3] += rgba_image[:, :, :3]  # Additionner les couleurs RGB
+                combined_rgba[:, :, 3] = np.maximum(combined_rgba[:, :, 3], rgba_image[:, :, 3])  # Gérer l'opacité
+
+        # Normalisation des couleurs après combinaison
+        combined_rgba[:, :, :3] /= np.max(combined_rgba[:, :, :3])  # Échelle entre 0 et 1
+
+        # Mise à jour de l'image combinée
+        self.combined_image = combined_rgba
+        self.update_combined_image()
+
 
     def update_combined_image(self):
         """Affiche l'image combinée."""
         if self.combined_image is None:
             return
 
-        colormap = self.colormap_selector.currentText()
         self.combined_canvas.figure.clear()
         ax = self.combined_canvas.figure.add_subplot(111)
         norm = ImageNormalize(self.combined_image, interval=MinMaxInterval(), stretch=LogStretch())
-        im = ax.imshow(self.combined_image, cmap=colormap, origin="lower", norm=norm)
+        im = ax.imshow(self.combined_image, cmap="gray", origin="lower", norm=norm)  # Utilisation d'un affichage neutre
         self.combined_canvas.figure.colorbar(im, ax=ax, orientation="vertical")
         ax.set_title("Image combinée")
         self.combined_canvas.draw()
