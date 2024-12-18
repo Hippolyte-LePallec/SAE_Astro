@@ -6,7 +6,7 @@ import numpy as np
 import os
 
 # Paramètres
-object_name = "Andromeda"
+object_name = "Tarantula"
 radius = 0.1 * u.deg  # Rayon élargi
 output_dir = "fits_downloads"
 
