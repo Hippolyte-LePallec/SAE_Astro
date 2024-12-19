@@ -1,9 +1,11 @@
 import sys
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QWidget
+    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog,
+    QWidget, QToolBar, QComboBox, QLabel,QLineEdit
 )
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
@@ -12,30 +14,56 @@ class AstroApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("AstroApp")
-        self.setGeometry(100, 100, 1400, 800)
+
+        
+        self.toolbar = QToolBar("Barre d'outils")
+        self.addToolBar(self.toolbar)
+
+        
+        self.load_button = QPushButton("Charger FITS")
+        self.load_button.clicked.connect(self.load_images)
+        self.toolbar.addWidget(self.load_button)
+
+       
+        self.theme_selector = QComboBox()
+        self.theme_selector.addItems(["Clair", "Sombre", "Bleu Nuit", "Irrorater", "Combinear"])
+        self.theme_selector.currentTextChanged.connect(self.change_theme)
+        self.toolbar.addWidget(self.theme_selector)
+
+        
+        self.search_bar = QLineEdit()
+        self.search_bar.setPlaceholderText("rechercher des missions")
+        self.toolbar.addWidget(self.search_bar)
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         layout = QVBoxLayout(self.central_widget)
 
-
-        self.load_button = QPushButton("Charger les images FITS")
-        self.load_button.clicked.connect(self.load_images)
-        layout.addWidget(self.load_button)
-
-
+        
         self.image_canvases = []
+        self.channel_selectors = []
         images_layout = QHBoxLayout()
-        for _ in range(3):  
+        for i in range(3):  
+            image_layout = QVBoxLayout()
             canvas = FigureCanvas(plt.figure())
             self.image_canvases.append(canvas)
-            images_layout.addWidget(canvas)
+            image_layout.addWidget(canvas)
+
+            
+            channel_selector = QComboBox()
+            channel_selector.addItems(["R", "G", "B"])
+            channel_selector.currentIndexChanged.connect(self.combine_images)
+            self.channel_selectors.append(channel_selector)
+            image_layout.addWidget(channel_selector)
+
+            images_layout.addLayout(image_layout)
         layout.addLayout(images_layout)
 
-
+        
         self.combined_canvas = FigureCanvas(plt.figure())
         layout.addWidget(self.combined_canvas)
 
+        
         self.image_data_list = []
 
     def load_images(self):
@@ -53,7 +81,6 @@ class AstroApp(QMainWindow):
             try:
                 with fits.open(file_path) as hdul:
                     image_data = hdul[0].data
-
 
                     vmin, vmax = np.percentile(image_data, (1, 99))
                     normalized_data = np.clip((image_data - vmin) / (vmax - vmin), 0, 1)
@@ -78,7 +105,7 @@ class AstroApp(QMainWindow):
                 canvas.draw()
 
     def combine_images(self):
-        """Combine les images normalisées en une seule image RGB."""
+        """Combine les images normalisées en une seule image RGB selon les canaux sélectionnés."""
         if not self.image_data_list:
             return
 
@@ -88,11 +115,17 @@ class AstroApp(QMainWindow):
                 print("Les images doivent avoir la même taille.")
                 return
 
-        num_images = len(self.image_data_list)
-        combined_image = np.zeros((image_shape[0], image_shape[1], min(num_images, 3)))
+        
+        combined_image = np.zeros((image_shape[0], image_shape[1], 3))
 
-        for i in range(min(num_images, 3)):
-            combined_image[:, :, i] = self.image_data_list[i]
+        for i in range(min(len(self.image_data_list), 3)):
+            channel = self.channel_selectors[i].currentText()
+            if channel == "R":
+                combined_image[:, :, 0] = self.image_data_list[i]
+            elif channel == "G":
+                combined_image[:, :, 1] = self.image_data_list[i]
+            elif channel == "B":
+                combined_image[:, :, 2] = self.image_data_list[i]
 
         self.update_combined_image(combined_image)
 
@@ -106,6 +139,26 @@ class AstroApp(QMainWindow):
         ax.imshow(combined_image, origin='lower')
         ax.set_title("Image combinée")
         self.combined_canvas.draw()
+
+    def change_theme(self, theme):
+        """Change le thème en chargeant un fichier QSS."""
+        theme_files = {
+            "Clair": "qss/clair.qss",
+            "Sombre": "qss/sombre.qss",
+            "Bleu Nuit": "qss/bleu_nuit.qss",
+            "Irrorater": "qss/Irrorater.qss",
+            "Combinear": "qss/Combinear.qss",
+        }
+
+        if theme in theme_files:
+            qss_file = theme_files[theme]
+            try:
+                # Construire un chemin absolu basé sur l'emplacement actuel du script
+                qss_path = os.path.join(os.path.dirname(__file__), qss_file)
+                with open(qss_path, "r") as f:
+                    self.setStyleSheet(f.read())
+            except FileNotFoundError:
+                print(f"Le fichier {qss_path} est introuvable.")
 
 
 if __name__ == "__main__":
