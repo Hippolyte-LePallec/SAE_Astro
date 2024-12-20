@@ -1,64 +1,23 @@
-from astroquery.mast import Observations
-from astropy.coordinates import SkyCoord
-import astropy.units as u
-from astropy.io import fits
-import numpy as np
-import os
+from astroquery.skyview import SkyView
+import astropy.units as u  # Import des unités
 
-# Paramètres
-object_name = "Tarantula"
-radius = 0.1 * u.deg  # Rayon élargi
-output_dir = "fits_downloads"
+# Demander à l'utilisateur de saisir le nom de l'objet
+target = input("Entrez le nom de l'objet céleste (par ex., M31 pour Andromède) : ").strip()
 
-# Étape 1 : Convertir le nom en coordonnées
-coordinates = SkyCoord.from_name(object_name)
-print(f"Coordonnées de {object_name} : {coordinates}")
+# Définir les surveys souhaités
+surveys = ["DSS2 Red", "DSS2 Blue", "DSS2 IR"]  # Vous pouvez adapter cette liste si nécessaire
+image_size = 0.5 * u.deg  # Taille de l'image avec unités (en degrés)
 
-# Étape 2 : Rechercher toutes les observations autour de l'objet
-obs_table = Observations.query_region(coordinates, radius=radius)
-print(f"Nombre total d'observations trouvées : {len(obs_table)}")
+try:
+    # Télécharger les fichiers FITS pour l'objet saisi
+    fits_files = SkyView.get_images(position=target, survey=surveys, radius=image_size)
 
-# Étape 3 : Afficher les missions disponibles
-available_missions = set(obs_table['obs_collection'])
-print("Missions disponibles :", available_missions)
+    # Sauvegarder les fichiers localement
+    for i, fits_file in enumerate(fits_files):
+        filename = f"{target.replace(' ', '_')}_{surveys[i].replace(' ', '_')}.fits"
+        fits_file[0].writeto(filename, overwrite=True)
+        print(f"Fichier enregistré : {filename}")
 
-# Filtrer manuellement par mission
-missions = ['JWST']  # Utilise une mission fiable comme Hubble
-filtered_obs_table = obs_table[np.isin(obs_table['obs_collection'], missions)]
-print(f"Nombre d'observations après filtrage par mission : {len(filtered_obs_table)}")
+except Exception as e:
+    print(f"Une erreur s'est produite : {e}")
 
-# Si aucune observation n'est trouvée, essayer avec une autre mission
-if len(filtered_obs_table) == 0:
-    print(f"Aucune observation trouvée pour la mission {missions}. Essayons avec une autre mission.")
-    missions = ['HST']  # Par exemple, essayer Hubble (HST)
-    filtered_obs_table = obs_table[np.isin(obs_table['obs_collection'], missions)]
-    print(f"Nombre d'observations après filtrage par mission {missions} : {len(filtered_obs_table)}")
-
-# Étape 4 : Récupérer les produits FITS associés aux observations filtrées
-if len(filtered_obs_table) > 0:
-    products = Observations.get_product_list(filtered_obs_table)
-    print(f"Nombre total de produits trouvés : {len(products)}")
-    print("Colonnes disponibles dans les produits :", products.colnames)
-
-    # Filtrer uniquement les produits avec une extension .fits
-    filtered_products = products[np.char.endswith(products['productFilename'].astype(str), '.fits')]
-    print(f"Nombre de produits FITS filtrés : {len(filtered_products)}")
-
-    # Étape 5 : Télécharger les fichiers FITS
-    if len(filtered_products) == 0:
-        print("Aucun produit FITS trouvé après filtrage.")
-    else:
-        os.makedirs(output_dir, exist_ok=True)
-        manifest = Observations.download_products(filtered_products, download_dir=output_dir)
-        print("Téléchargement terminé.")
-
-        # Vérifier les coordonnées des fichiers téléchargés
-        for file_info in manifest['Local Path']:
-            if file_info.endswith('.fits'):
-                with fits.open(file_info) as hdul:
-                    header = hdul[0].header
-                    ra = header.get('RA')
-                    dec = header.get('DEC')
-                    print(f"Fichier : {file_info} | RA : {ra} | DEC : {dec}")
-else:
-    print("Aucune observation filtrée disponible pour télécharger des produits.")
