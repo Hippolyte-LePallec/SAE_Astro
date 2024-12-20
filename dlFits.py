@@ -1,13 +1,13 @@
 import os
 from astroquery.skyview import SkyView
-import astropy.units as u  # Import des unités
+import astropy.units as u
 
-# Demander à l'utilisateur de saisir le nom de l'objet
+
 target = input("Entrez le nom de l'objet céleste : ").strip()
 
 # Définir les surveys souhaités
-surveys = ["DSS2 Red", "DSS2 Blue", "DSS2 IR"]  # Vous pouvez adapter cette liste si nécessaire
-image_size = 0.5 * u.deg  # Taille de l'image avec unités (en degrés)
+surveys = ["DSS2 Red", "DSS2 Blue", "DSS2 IR"]
+image_size = 0.5 * u.deg 
 
 try:
     # Télécharger les fichiers FITS pour l'objet saisi
@@ -16,8 +16,8 @@ try:
     # Vérifier si des images ont été retournées
     if fits_files:
         # Créer un dossier pour enregistrer les fichiers
-        output_dir = target.replace(' ', '_')  # Remplacer les espaces par des underscores
-        os.makedirs(output_dir, exist_ok=True)  # Crée le dossier s'il n'existe pas
+        output_dir = target.replace(' ', '_')  
+        os.makedirs(output_dir, exist_ok=True)
 
         # Sauvegarder les fichiers localement dans le dossier
         for i, fits_file in enumerate(fits_files):
