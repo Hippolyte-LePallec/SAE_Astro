@@ -3,14 +3,37 @@ import os
 import numpy as np
 from PyQt6.QtWidgets import QFileDialog
 from astroquery.skyview import SkyView
+from astroquery.jplhorizons import Horizons
+from astropy.coordinates import SkyCoord
+from astropy.io import fits
 import astropy.units as u
 from view import AstroAppView
-from astropy.io import fits
+
 
 class AstroAppController:
     def __init__(self):
         self.view = AstroAppView(self)
         self.image_data_list = []
+
+    def resolve_target(self, target):
+        """Résout le nom de l'objet céleste en coordonnées."""
+        try:
+            # Tenter avec SkyCoord
+            coords = SkyCoord.from_name(target)
+            print(f"Coordonnées résolues pour {target} (via SkyCoord): {coords.to_string('hmsdms')}")
+            return coords
+        except Exception:
+            print(f"SkyCoord ne peut pas résoudre {target}. Tentative via JPL Horizons...")
+            try:
+                # Tenter avec JPL Horizons
+                obj = Horizons(id=target, location="@sun", epochs=None)
+                eph = obj.ephemerides()
+                coords = SkyCoord(eph['RA'][0], eph['DEC'][0], unit=(u.deg, u.deg), frame="icrs")
+                print(f"Coordonnées résolues pour {target} (via JPL Horizons): {coords.to_string('hmsdms')}")
+                return coords
+            except Exception as e:
+                print(f"Impossible de résoudre {target} via JPL Horizons : {e}")
+                return None
 
     def search_object(self):
         """Recherche un objet céleste et télécharge les images FITS associées."""
@@ -19,13 +42,18 @@ class AstroAppController:
             print("Veuillez entrer un nom d'objet céleste.")
             return
 
+        coordinates = self.resolve_target(target)
+        if coordinates is None:
+            print(f"Aucune coordonnée trouvée pour l'objet : {target}.")
+            return
+
         surveys = ["DSS2 Red", "DSS2 Blue", "DSS2 IR"]
         image_size = 0.5 * u.deg
 
         try:
-            fits_files = SkyView.get_images(position=target, survey=surveys, radius=image_size)
+            fits_files = SkyView.get_images(position=coordinates, survey=surveys, radius=image_size)
             if fits_files:
-                output_dir = target.replace(' ', '_')
+                output_dir = os.path.join(target.replace(' ', '_'), "SkyView")
                 os.makedirs(output_dir, exist_ok=True)
 
                 self.image_data_list = []
