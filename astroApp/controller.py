@@ -18,24 +18,24 @@ class AstroAppController:
     def resolve_target(self, target):
         """Résout le nom de l'objet céleste en coordonnées."""
         try:
-            # Tenter avec SkyCoord
+           
             coords = SkyCoord.from_name(target)
             print(f"Coordonnées résolues pour {target} (via SkyCoord): {coords.to_string('hmsdms')}")
-            self.view.update_coordinates(coords)  # Affiche les coordonnées dans la vue
+            self.view.update_coordinates(coords) 
             return coords
         except Exception:
             print(f"SkyCoord ne peut pas résoudre {target}. Tentative via JPL Horizons...")
             try:
-                # Tenter avec JPL Horizons
+                
                 obj = Horizons(id=target, location="@sun", epochs=None)
                 eph = obj.ephemerides()
                 coords = SkyCoord(eph['RA'][0], eph['DEC'][0], unit=(u.deg, u.deg), frame="icrs")
                 print(f"Coordonnées résolues pour {target} (via JPL Horizons): {coords.to_string('hmsdms')}")
-                self.view.update_coordinates(coords)  # Affiche les coordonnées dans la vue
+                self.view.update_coordinates(coords) 
                 return coords
             except Exception as e:
                 print(f"Impossible de résoudre {target} via JPL Horizons : {e}")
-                self.view.update_coordinates(None)  # Affiche un message d'erreur
+                self.view.update_coordinates(None) 
                 return None
 
     def search_object(self):

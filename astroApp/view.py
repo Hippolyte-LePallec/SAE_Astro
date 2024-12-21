@@ -11,18 +11,18 @@ class AstroAppView(QMainWindow):
         self.toolbar = QToolBar("Barre d'outils")
         self.addToolBar(self.toolbar)
 
-        # Bouton pour charger des fichiers FITS localement
+
         self.load_button = QPushButton("Charger FITS")
         self.load_button.clicked.connect(self.controller.load_images)
         self.toolbar.addWidget(self.load_button)
 
-        # Sélecteur de thème
+
         self.theme_selector = QComboBox()
         self.theme_selector.addItems(["Clair", "Sombre", "Bleu Nuit", "Irrorater", "Combinear"])
         self.theme_selector.currentTextChanged.connect(self.change_theme)
         self.toolbar.addWidget(self.theme_selector)
 
-        # Barre de recherche
+
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("Rechercher des missions ou objets célestes")
         self.search_bar.returnPressed.connect(self.controller.search_object)
@@ -32,7 +32,7 @@ class AstroAppView(QMainWindow):
         self.setCentralWidget(self.central_widget)
         layout = QVBoxLayout(self.central_widget)
 
-        # Layout pour les images individuelles
+
         self.image_canvases = []
         self.channel_selectors = []
         images_layout = QHBoxLayout()
@@ -42,7 +42,7 @@ class AstroAppView(QMainWindow):
             self.image_canvases.append(canvas)
             image_layout.addWidget(canvas)
 
-            # Sélecteur de canal
+
             channel_selector = QComboBox()
             channel_selector.addItems(["R", "G", "B"])
             channel_selector.currentIndexChanged.connect(self.controller.combine_images)  # Assure la mise à jour de l'image combinée
@@ -52,11 +52,10 @@ class AstroAppView(QMainWindow):
             images_layout.addLayout(image_layout)
         layout.addLayout(images_layout)
 
-        # Canvas pour l'image combinée
         self.combined_canvas = FigureCanvas(plt.figure())
         layout.addWidget(self.combined_canvas)
 
-        # Ajouter un QLabel pour afficher les coordonnées
+
         self.coord_label = QLabel("Coordonnées : N/A")
         layout.addWidget(self.coord_label)
 
