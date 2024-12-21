@@ -56,6 +56,17 @@ class AstroAppView(QMainWindow):
         self.combined_canvas = FigureCanvas(plt.figure())
         layout.addWidget(self.combined_canvas)
 
+        # Ajouter un QLabel pour afficher les coordonnées
+        self.coord_label = QLabel("Coordonnées : N/A")
+        layout.addWidget(self.coord_label)
+
+    def update_coordinates(self, coordinates):
+        """Affiche les coordonnées résolues de l'objet céleste."""
+        if coordinates is not None:
+            self.coord_label.setText(f"Coordonnées : {coordinates.to_string('hmsdms')}")
+        else:
+            self.coord_label.setText("Coordonnées : Impossible de résoudre l'objet.")
+
     def update_combined_image(self, combined_image):
         """Affiche l'image combinée."""
         if combined_image is None:

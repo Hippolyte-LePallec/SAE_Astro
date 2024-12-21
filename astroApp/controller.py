@@ -21,6 +21,7 @@ class AstroAppController:
             # Tenter avec SkyCoord
             coords = SkyCoord.from_name(target)
             print(f"Coordonnées résolues pour {target} (via SkyCoord): {coords.to_string('hmsdms')}")
+            self.view.update_coordinates(coords)  # Affiche les coordonnées dans la vue
             return coords
         except Exception:
             print(f"SkyCoord ne peut pas résoudre {target}. Tentative via JPL Horizons...")
@@ -30,9 +31,11 @@ class AstroAppController:
                 eph = obj.ephemerides()
                 coords = SkyCoord(eph['RA'][0], eph['DEC'][0], unit=(u.deg, u.deg), frame="icrs")
                 print(f"Coordonnées résolues pour {target} (via JPL Horizons): {coords.to_string('hmsdms')}")
+                self.view.update_coordinates(coords)  # Affiche les coordonnées dans la vue
                 return coords
             except Exception as e:
                 print(f"Impossible de résoudre {target} via JPL Horizons : {e}")
+                self.view.update_coordinates(None)  # Affiche un message d'erreur
                 return None
 
     def search_object(self):
