@@ -6,7 +6,7 @@ AstroApp est une application de bureau permettant de rechercher, visualiser et c
 
 - **Recherche d'objets célestes :**
   - Résolution de noms d'objets célestes en coordonnées (via `SkyCoord` ou `JPL Horizons`).
-  - Téléchargement d'images FITS à partir de surveys tels que DSS2 (Red, Blue, IR).
+  - Téléchargement d'images FITS à partir de missions tels que DSS2 (Red, Blue, InfraRouge).
 
 - **Chargement local :**
   - Importation d'images FITS locales pour les afficher et les combiner.
@@ -47,9 +47,10 @@ AstroApp est une application de bureau permettant de rechercher, visualiser et c
 
 ## Rechercher un objet céleste
 
-1. Entrez un nom dans la barre de recherche (par exemple, "M31" pour Andromède, "Tarantula", etc.).
+1. Entrez un nom dans la barre de recherche (par exemple, "Andromeda", "Tarantula", "Orion", "M45", etc.).
 2. Appuyez sur **Entrée** pour Télécharger les images associées.
 3. Les images disponibles seront automatiquement téléchargées et affichées.
+4. Si l'objet n'est pas trouvé, un message s'affichera dans le terminal avec des suggestions, noter le nom suggeré.
 
 ---
 
